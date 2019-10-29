@@ -11,15 +11,26 @@ server.get("/", (req, res) => {
 });
 
 server.post("/api/users", (req, res) => {
-  console.log(req.body);
-  if (!req.body.name || !req.body.bio) {
+  console.log(req.body.bio);
+  if (!isValidUser(req.body)) {
     res
       .status(400)
       .json({ errorMessage: "Please provide name and bio for the user." });
   } else {
-    db.insert(req.body)
-      .then(id => res.status(201).json(id))
-      .catch(err => res.status(500).json(err.message));
+    db.insert({ name: req.body.name, bio: req.body.bio })
+      .then(id =>
+        db
+          .findById(id.id)
+          .then(user => res.status(201).json(user))
+          .catch({
+            error: "There was an error while saving the user to the database"
+          })
+      )
+      .catch(err =>
+        res.status(500).json({
+          error: "There was an error while saving the user to the database"
+        })
+      );
   }
 });
 
@@ -77,10 +88,13 @@ server.put("/api/users/:id", (req, res) => {
       .status(400)
       .json({ errorMessage: "Please provide name and bio for the user." });
   } else {
-    db.update(id, req.body)
+    db.update(id, { name: req.body.name, bio: req.body.bio })
       .then(updated => {
         updated
-          ? db.findById(id).then(user => res.status(200).json(user))
+          ? db
+              .findById(id)
+              .then(user => res.status(200).json(user))
+              .catch(err => res.status(500).json(err.message))
           : res.status(404).json({
               message: "The user with the specified ID does not exist."
             });
@@ -88,6 +102,12 @@ server.put("/api/users/:id", (req, res) => {
       .catch(err => res.status(500).json(err.message));
   }
 });
+
+function isValidUser(user) {
+  const { name, bio } = user;
+
+  return name && bio;
+}
 
 server.listen(8000, () => {
   console.log("Listening on port 8000");
