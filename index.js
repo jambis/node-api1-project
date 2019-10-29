@@ -72,7 +72,7 @@ server.delete("/api/users/:id", (req, res) => {
 server.put("/api/users/:id", (req, res) => {
   const id = req.params.id;
 
-  if (!req.body.name && !req.body.bio) {
+  if (!req.body.name || !req.body.bio) {
     res
       .status(400)
       .json({ errorMessage: "Please provide name and bio for the user." });
